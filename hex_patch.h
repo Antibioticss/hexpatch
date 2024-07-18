@@ -3,6 +3,7 @@
 
 #define PAT_SUCCESS     0
 #define PAT_NOTFOUND    1
+#define PAT_FAILURE     2
 
 #define BUFFER_SIZE     1024
 

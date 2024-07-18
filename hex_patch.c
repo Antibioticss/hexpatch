@@ -38,7 +38,8 @@ int patch_single(FILE *fp, const int count, const char *search, const char *repl
                 search_end = true;
             }
             else if (ferror(fp)) {
-                perror("fread");
+                perror("fread \033[1;31merror\033[0m");
+                patch_res = PAT_FAILURE;
                 break;
             }
         }
@@ -59,9 +60,10 @@ int patch_single(FILE *fp, const int count, const char *search, const char *repl
                     if (new_match != NULL) {
                         match_idx = new_match;
                     } else {
-                        fprintf(stderr, "realloc: out of memory!\n");
+                        fprintf(stderr, "realloc \033[1;31merror\033[0m: out of memory!\n");
                         match_count = 0;
                         search_end = true;
+                        patch_res = PAT_FAILURE;
                         break;
                     }
                 }
@@ -69,27 +71,29 @@ int patch_single(FILE *fp, const int count, const char *search, const char *repl
         }
         fp_offset += read_len;
     }
+    free(nxt);
+    free(buffer);
 
     // start patching
     for (int i = 0; i < match_count; i++) {
         if (fseek(fp, orig_offset + match_idx[i], SEEK_SET) < 0) {
-            perror("fseek");
+            perror("fseek \033[1;31merror\033[0m");
+            patch_res = PAT_FAILURE;
             break;
         }
         const size_t written = fwrite(replace, count, sizeof(char), fp);
         if (written != count) {
             if (feof(fp)) {
-                fprintf(stderr, "fwrite: unexpected eof!\n");
+                fprintf(stderr, "fwrite \033[1;31merror\033[0m: unexpected eof!\n");
+                patch_res = PAT_FAILURE;
                 break;
             }
             else if (ferror(fp)) {
-                perror("fwrite");
+                perror("fwrite \033[1;31merror\033[0m");
+                patch_res = PAT_FAILURE;
             }
         }
     }
-
-    free(nxt);
     free(match_idx);
-    free(buffer);
     return patch_res;
 }
