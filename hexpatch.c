@@ -3,8 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <limits.h>
 
-int patch_single(FILE *fp, const int count, const char *search, const char *replace) {
+int patch_single(FILE *fp, const range match_range, const int count, const char *search, const char *replace) {
     int patch_res = PAT_NOTFOUND;
     const long long orig_offset = ftell(fp);
 
@@ -26,11 +27,18 @@ int patch_single(FILE *fp, const int count, const char *search, const char *repl
     }
 
     // start searching
-    int match_count = 0, match_len = 100, cur_idx = 0;
+    // const int match_end = match_range.right > 0 ? match_range.right : match_range.right + match_count;
+
+    int match_count = 0, match_end, match_len = 100, cur_idx = 0;
     long long fp_offset = 0;
     long long *match_idx = (long long *)malloc(match_len * sizeof(long long));
     char *buffer = (char *)malloc(BUFFER_SIZE * sizeof(char));
     bool search_end = false;
+    if (match_range.right >= 0) {
+        match_end = match_range.right + 1;
+    } else {
+        match_end = INT_MAX;
+    }
     while (!search_end) {
         const size_t read_len = fread(buffer, sizeof(char), BUFFER_SIZE, fp);
         if (read_len != BUFFER_SIZE) {
@@ -67,6 +75,10 @@ int patch_single(FILE *fp, const int count, const char *search, const char *repl
                         break;
                     }
                 }
+                if (match_count == match_end) {
+                    search_end = true;
+                    break;
+                }
             }
         }
         fp_offset += read_len;
@@ -75,7 +87,14 @@ int patch_single(FILE *fp, const int count, const char *search, const char *repl
     free(buffer);
 
     // start patching
-    for (int i = 0; i < match_count; i++) {
+    if (match_range.left > match_count - 1 || match_range.right > match_count - 1) {
+        fprintf(stderr, "patching \033[1;31merror\033[0m: out of range!\n");
+        return PAT_FAILURE;
+    }
+    if (match_range.right < 0) {
+        match_end = match_range.right + match_count + 1;
+    }
+    for (int i = match_range.left; i < match_end; i++) {
         if (fseek(fp, orig_offset + match_idx[i], SEEK_SET) < 0) {
             perror("fseek \033[1;31merror\033[0m");
             patch_res = PAT_FAILURE;
