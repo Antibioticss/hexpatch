@@ -14,7 +14,7 @@ int main() {
     fclose(fp);
 
     fp = fopen("test.txt", "rb+");
-    patch_single(fp, (range){1, -1}, 3, "def", "bbb");
+    patch_single(fp, (range){1, -2}, 3, "aaa", "bbb");
     fclose(fp);
 
     fp = fopen("test.txt", "r");
