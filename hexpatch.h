@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-#define BUFFER_SIZE     1024
+#define BUFFER_SIZE     1e5
 
 typedef enum {
     PAT_SUCCESS, PAT_NOTFOUND, PAT_FAILURE

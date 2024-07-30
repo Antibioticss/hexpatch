@@ -30,7 +30,11 @@ long long *search_single(FILE *fp, const int count, int * matched,const size_t b
         return NULL;
     }
     int match_count = 0, match_len = count ? count + 1 : 100, cur_idx = 0;
-    long long fp_offset = ftell(fp), *match_idx = malloc(match_len * sizeof(long long));
+    long long fp_offset = ftell(fp), fp_total, *match_idx = malloc(match_len * sizeof(long long));
+    fseek(fp, 0, SEEK_END);
+    fp_total = ftell(fp);
+    fseek(fp, fp_offset, SEEK_SET);
+
     if (match_idx == NULL) {
         perror("malloc \033[1;31merror\033[0m");
         free(nxt);
@@ -39,7 +43,14 @@ long long *search_single(FILE *fp, const int count, int * matched,const size_t b
     }
     PAT_RESULT search_result = PAT_NOTFOUND;
     while (!search_stop) {
-        const size_t read_len = fread(buffer, sizeof(char), BUFFER_SIZE, fp);
+        size_t read_len;
+        if (fp_total - fp_offset < BUFFER_SIZE) {
+            read_len = sizeof(char) * fread(buffer, sizeof(char), BUFFER_SIZE, fp);
+        }
+        else {
+            read_len = BUFFER_SIZE * fread(buffer, BUFFER_SIZE, sizeof(char), fp);
+        }
+        // printf("read_len: %lu\n", read_len);
         if (read_len != BUFFER_SIZE) {
             if (feof(fp)) {
                 search_stop = true;
@@ -150,6 +161,7 @@ PAT_RESULT patch_single(FILE *fp, const range match_range, const size_t byte_len
             }
         }
     }
+
     free(match_idx);
 
     return patch_res;

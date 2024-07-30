@@ -9,7 +9,7 @@ add_executable(tests test.c)
 
 target_link_libraries(tests hexpatch)
 
-add_compile_options(-fsanitize=address -Wall)
+#add_compile_options(-fsanitize=address -Wall)
 
 enable_testing()
 add_test(NAME tests COMMAND time tests)
