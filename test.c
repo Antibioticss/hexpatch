@@ -15,22 +15,22 @@ char data1[] = {0x11,0x6D,0x80,0x31,0x57,0x43,0xEB,0xDA};
 char data2[] = {0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01};
 
 int main() {
-    // FILE * fp = fopen("test.txt", "w");
-    // fwrite(data, sizeof data, 1, fp);
-    // fclose(fp);
-    //
-    // fp = fopen("test.txt", "rb+");
-    // PAT_RESULT pr = patch_single(fp, (range){0, -1}, 6, "5. abc", "fuckyu");
-    // fclose(fp);
-    //
-    // fp = fopen("test.txt", "r");
-    // fread(buffer, 1, 100, fp);
-    // fclose(fp);
-    // printf("buffer:\n%s\n", buffer);
-
-    FILE *fp = fopen("random copy.bin", "rb+");
-    PAT_RESULT pr = patch_single(fp, (range){0, -1}, 8, data1, data2);
+    FILE * fp = fopen("test.txt", "w");
+    fwrite(data, sizeof data, 1, fp);
     fclose(fp);
+
+    fp = fopen("test.txt", "rb+");
+    PAT_RESULT pr = patch_single(fp, (range){0, -1}, 6, "5. abc", "fuckyu");
+    fclose(fp);
+
+    fp = fopen("test.txt", "r");
+    fread(buffer, 1, 100, fp);
+    fclose(fp);
+    printf("buffer:\n%s\n", buffer);
+
+    // FILE *fp = fopen("random copy.bin", "rb+");
+    // PAT_RESULT pr = patch_single(fp, (range){0, -1}, 8, data1, data2);
+    // fclose(fp);
 
     printf("pr: %d\n", pr);
 
