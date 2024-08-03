@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.28)
 project(hexpatch C)
 
-set(CMAKE_C_STANDARD 11)
+add_compile_options(-fsanitize=address -Wall)
+add_link_options(-fsanitize=address -Wall)
 
-#add_compile_options(-fsanitize=address -Wall)
+set(CMAKE_C_STANDARD 11)
 
 add_library(hexpatch STATIC hexpatch.c)
 

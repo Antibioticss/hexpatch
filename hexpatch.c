@@ -74,6 +74,9 @@ long long *search_single(FILE *fp, const int count, int * matched, const size_t 
                     if (i - skipbuf[j].val <= read_len - byte_len) {
                         search_result = PAT_SUCCESS;
                         match_idx[match_count++] = fp_offset + i - skipbuf[j].val;
+                        if (count && match_count == count) {
+                            goto search_exit;
+                        }
                         if (match_count == match_len) {
                             /* extend match_idx */
                             match_len += 100;
