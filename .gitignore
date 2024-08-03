@@ -27,4 +27,6 @@ Temporary Items
 
 # Useless project files
 cmake-build-debug
+cmake-build-release
 .idea
+.vscode

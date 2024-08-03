@@ -3,108 +3,112 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 
-long long *search_single(FILE *fp, const int count, int * matched,const size_t byte_len, const char *search) {
-    // start building nxt
-    int *nxt = (int *)malloc((byte_len + 1) * sizeof(int));
-    nxt[0] = nxt[1] = 0;
-    int tmp = 0;
-    for (int i = 2; i <= byte_len; i++) {
-        while (tmp != 0 && search[tmp] != search[i-1]) {
-            tmp = nxt[tmp];
-        }
-        if (tmp > 0 || search[tmp] == search[i-1]) {
-            nxt[i] = ++tmp;
-        }
-        else {
-            nxt[i] = 0;
-        }
+#define ASIZE 256
+
+typedef struct {
+	int val, nxt;
+} node;
+
+long long *search_single(FILE *fp, const int count, int * matched, const size_t byte_len, const char *search) {
+    /* preprocessing */
+    int bufidx = 1, bucket[ASIZE];
+	node *skipbuf = (node *)malloc((byte_len + 1) * sizeof(node));
+    if (skipbuf == NULL) {
+        perror("malloc \033[1;31merror\033[0m");
+        return NULL;
     }
+	memset(bucket, 0, sizeof(bucket));
+	for (int i = 0; i < byte_len; i++) {
+	    unsigned char ch = search[i];
+		skipbuf[bufidx].val = i;
+		skipbuf[bufidx].nxt = bucket[ch];
+		bucket[ch] = bufidx++;
+	}
 
-    // start searching
+    /* searching */
     bool search_stop = false;
-    char *buffer = (char *)malloc(BUFFER_SIZE * sizeof(char));
+    PAT_RESULT search_result = PAT_NOTFOUND;
+    char *buffer = (char *)malloc((BUFFER_SIZE + byte_len * 2) * sizeof(char));
+    /* add byte_len*2 because memcmp problem */
     if (buffer == NULL) {
         perror("malloc \033[1;31merror\033[0m");
-        free(nxt);
-        return NULL;
+        search_result = PAT_FAILURE;
+        search_stop = true;
     }
-    int match_count = 0, match_len = count ? count + 1 : 100, cur_idx = 0;
-    long long fp_offset = ftell(fp), fp_total, *match_idx = malloc(match_len * sizeof(long long));
+    int match_count = 0, match_len = count ? count + 1 : 100;
+    /* set to 100 and extend later if count is zero */
+    long long fp_offset = ftell(fp);
     fseek(fp, 0, SEEK_END);
-    fp_total = ftell(fp);
+    long long fp_total = ftell(fp);
     fseek(fp, fp_offset, SEEK_SET);
-
+    long long *match_idx = malloc(match_len * sizeof(long long));
     if (match_idx == NULL) {
         perror("malloc \033[1;31merror\033[0m");
-        free(nxt);
-        free(buffer);
-        return NULL;
+        search_result = PAT_FAILURE;
+        goto search_exit;
     }
-    PAT_RESULT search_result = PAT_NOTFOUND;
     while (!search_stop) {
-        size_t read_len;
-        if (fp_total - fp_offset < BUFFER_SIZE) {
-            read_len = sizeof(char) * fread(buffer, sizeof(char), BUFFER_SIZE, fp);
+        size_t read_len = BUFFER_SIZE + byte_len - 1, out_len;
+        /* add byte_len-1 to prevent duplication */
+        if (fp_total - fp_offset < read_len) {
+            out_len = sizeof(char) * fread(buffer, sizeof(char), read_len, fp);
         }
         else {
-            read_len = BUFFER_SIZE * fread(buffer, BUFFER_SIZE, sizeof(char), fp);
+            out_len = BUFFER_SIZE * fread(buffer, read_len, sizeof(char), fp);
         }
-        // printf("read_len: %lu\n", read_len);
-        if (read_len != BUFFER_SIZE) {
+        if (out_len != read_len) {
             if (feof(fp)) {
                 search_stop = true;
             }
             else if (ferror(fp)) {
                 perror("fread \033[1;31merror\033[0m");
                 search_result = PAT_FAILURE;
-                break;
+                goto search_exit;
             }
         }
-        for (int i = 0; i < read_len; i++) {
-            while (cur_idx != 0 && search[cur_idx] != buffer[i]) {
-                cur_idx = nxt[cur_idx];
-            }
-            if (cur_idx > 0 || search[cur_idx] == buffer[i]) {
-                cur_idx++;
-            }
-            if (cur_idx == byte_len) {
-                search_result = PAT_SUCCESS;
-                match_idx[match_count++] = fp_offset + i - byte_len + 1;
-                cur_idx = nxt[cur_idx];
-                if (match_count == match_len) {
-                    // extend match_idx
-                    match_len += 100;
-                    long long *new_match = (long long*)realloc(match_idx, match_len * sizeof(long long));
-                    if (new_match != NULL) {
-                        match_idx = new_match;
+        for (int i = byte_len - 1; i < read_len; i += byte_len) {
+            for (int j = bucket[(unsigned char)buffer[i]]; j; j = skipbuf[j].nxt) {
+                if (memcmp(search, buffer + i - skipbuf[j].val, byte_len) == 0) {
+                    if (i - skipbuf[j].val <= read_len - byte_len) {
+                        search_result = PAT_SUCCESS;
+                        match_idx[match_count++] = fp_offset + i - skipbuf[j].val;
+                        if (match_count == match_len) {
+                            /* extend match_idx */
+                            match_len += 100;
+                            long long *new_match = (long long*)realloc(match_idx, match_len * sizeof(long long));
+                            if (new_match != NULL) {
+                                match_idx = new_match;
+                            }
+                            else {
+                                fprintf(stderr, "realloc \033[1;31merror\033[0m: out of memory!\n");
+                                match_count = 0;
+                                search_result = PAT_FAILURE;
+                                goto search_exit;
+                            }
+                        }
                     }
-                    else {
-                        fprintf(stderr, "realloc \033[1;31merror\033[0m: out of memory!\n");
-                        match_count = 0;
-                        search_stop = true;
-                        search_result = PAT_FAILURE;
-                        break;
-                    }
-                }
-                if (count && match_count == count) {
-                    search_stop = true;
-                    break;
                 }
             }
         }
-        fp_offset += read_len;
+        fp_offset += BUFFER_SIZE;
+        /* move fp to fp_offset (otherwise fread will repeat) */
+        if (fseek(fp, fp_offset, SEEK_SET) < 0) {
+            perror("fseek \033[1;31merror\033[0m");
+            goto search_exit;
+        }
     }
-    *matched = match_count;
-    free(nxt);
-    free(buffer);
 
+search_exit:
+    *matched = match_count;
+    free(skipbuf);
+    free(buffer);
     if (search_result == PAT_FAILURE) {
         free (match_idx);
         *matched = 0;
         match_idx = NULL;
     }
-
     return match_idx;
 }
 
