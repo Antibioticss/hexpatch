@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.28)
+cmake_minimum_required(VERSION 3.20)
 project(hexpatch C)
 
 add_compile_options(-fsanitize=address,undefined -Wall)
