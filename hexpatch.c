@@ -72,8 +72,8 @@ long long *search_single(FILE *fp, const int count, int * matched, const size_t 
         }
         for (int i = byte_len - 1; i < read_len; i += byte_len) {
             for (int j = bucket[(unsigned char)buffer[i]]; j; j = skipbuf[j].nxt) {
-                if (memcmp(search, buffer + i - skipbuf[j].val, byte_len) == 0) {
-                    if (i - skipbuf[j].val <= read_len - byte_len) {
+                if (i - skipbuf[j].val <= read_len - byte_len) {
+                    if (memcmp(search, buffer + i - skipbuf[j].val, byte_len) == 0) {
                         search_result = PAT_SUCCESS;
                         match_idx[match_count++] = fp_offset + i - skipbuf[j].val;
                         if (count && match_count == count) {
