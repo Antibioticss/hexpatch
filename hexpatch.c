@@ -7,7 +7,7 @@
 
 #define ASIZE           256
 #define EXTEND_SIZE     100
-#define BUFFER_SIZE     100000
+#define BUFFER_SIZE     64 * 1024
 
 typedef struct {
 	int val, nxt;
