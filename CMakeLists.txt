@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.28)
 project(hexpatch C)
 
-add_compile_options(-fsanitize=address -Wall)
-add_link_options(-fsanitize=address -Wall)
+add_compile_options(-fsanitize=address,undefined -Wall)
+add_link_options(-fsanitize=address,undefined -Wall)
 
 set(CMAKE_C_STANDARD 11)
 

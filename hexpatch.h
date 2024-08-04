@@ -3,13 +3,11 @@
 
 #include <stdio.h>
 
-#define BUFFER_SIZE     1e5
-
 typedef enum {
     PAT_SUCCESS, PAT_NOTFOUND, PAT_FAILURE
 } PAT_RESULT;
 
-// starts with 0, support negative index, ends with -1
+/* starts with 0, support negative index, ends with -1 */
 typedef struct {
     int left, right;
 } range;

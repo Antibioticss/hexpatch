@@ -5,7 +5,9 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define ASIZE 256
+#define ASIZE           256
+#define EXTEND_SIZE     100
+#define BUFFER_SIZE     100000
 
 typedef struct {
 	int val, nxt;
@@ -37,7 +39,7 @@ long long *search_single(FILE *fp, const int count, int * matched, const size_t 
         search_result = PAT_FAILURE;
         search_stop = true;
     }
-    int match_count = 0, match_len = count ? count + 1 : 100;
+    int match_count = 0, match_len = count ? count + 1 : EXTEND_SIZE;
     /* set to 100 and extend later if count is zero */
     long long fp_offset = ftell(fp);
     fseek(fp, 0, SEEK_END);
@@ -79,7 +81,7 @@ long long *search_single(FILE *fp, const int count, int * matched, const size_t 
                         }
                         if (match_count == match_len) {
                             /* extend match_idx */
-                            match_len += 100;
+                            match_len += EXTEND_SIZE;
                             long long *new_match = (long long*)realloc(match_idx, match_len * sizeof(long long));
                             if (new_match != NULL) {
                                 match_idx = new_match;
